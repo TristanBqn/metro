@@ -61,47 +61,69 @@ kalman_y = KalmanFilter()
 # --------------------------------------------------
 html("""
 <script>
-let lastSent = 0;
+let permissionGranted = false;
 
-async function requestPermission() {
+function initSensors() {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
-        try {
-            const response = await DeviceMotionEvent.requestPermission();
-            if (response !== 'granted') {
-                alert("Permission refusée. Veuillez autoriser l'accès aux capteurs.");
-                return;
-            }
-        } catch (err) {
-            alert("Erreur: " + err);
-        }
+        // iOS
+        DeviceMotionEvent.requestPermission()
+            .then(response => {
+                if (response === 'granted') {
+                    permissionGranted = true;
+                    startListening();
+                } else {
+                    alert('Permission refusée. Vous devez autoriser l’accès aux capteurs.');
+                }
+            })
+            .catch(console.error);
+    } else {
+        // Android ou navigateurs sans restriction
+        permissionGranted = true;
+        startListening();
     }
 }
 
-requestPermission();
+function startListening() {
+    if (!permissionGranted) return;
 
-window.addEventListener('devicemotion', (event) => {
-    const now = Date.now();
-    if (now - lastSent > 100) { // 10 Hz
-        const acc = event.accelerationIncludingGravity;
-        const rot = event.rotationRate;
-        const payload = {
-            acceleration: {
-                x: acc?.x || 0,
-                y: acc?.y || 0,
-                z: acc?.z || 0
-            },
-            rotation: {
-                alpha: rot?.alpha || 0,
-                beta: rot?.beta || 0,
-                gamma: rot?.gamma || 0
-            }
-        };
-        window.location.hash = encodeURIComponent(JSON.stringify(payload));
-        lastSent = now;
-    }
-});
+    let lastSent = 0;
+    window.addEventListener('devicemotion', (event) => {
+        const now = Date.now();
+        if (now - lastSent > 100) {
+            const acc = event.accelerationIncludingGravity;
+            const rot = event.rotationRate;
+            const payload = {
+                acceleration: {
+                    x: acc?.x || 0,
+                    y: acc?.y || 0,
+                    z: acc?.z || 0
+                },
+                rotation: {
+                    alpha: rot?.alpha || 0,
+                    beta: rot?.beta || 0,
+                    gamma: rot?.gamma || 0
+                }
+            };
+            window.location.hash = encodeURIComponent(JSON.stringify(payload));
+            lastSent = now;
+        }
+    });
+}
 </script>
-""", height=0)
+
+<button onclick="initSensors()" style="
+    background-color:#008CBA;
+    color:white;
+    padding:10px 20px;
+    border:none;
+    border-radius:6px;
+    font-size:16px;
+    margin:10px;
+">
+📱 Activer les capteurs
+</button>
+""", height=80)
+
 
 # --------------------------------------------------
 # 🔄 TRAITEMENT DES DONNÉES
