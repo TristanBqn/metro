@@ -124,3 +124,36 @@ html(
         alpha: (typeof rot.alpha === 'number') ? rot.alpha : 0, // deg/s
         beta:  (typeof rot.beta  === 'number') ? rot.beta  : 0,
         gamma: (typeof rot.gamma === 'number') ? rot.gamma : 0
+      }
+    };
+    const q = new URLSearchParams(window.location.search);
+    q.set('sensor', JSON.stringify(payload));
+    history.replaceState(null, '', window.location.pathname + '?' + q.toString());
+  }, true);
+})();
+</script>
+    """
+)
+
+# -------------------------------
+# 📈 VISUALISATION
+# -------------------------------
+st.markdown("#### Tracé du mouvement")
+placeholder = st.empty()
+
+# Placeholder d'affichage
+if st.session_state.positions:
+    x, y = zip(*st.session_state.positions)
+else:
+    x, y = [0], [0]
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=x, y=y, mode="lines+markers"))
+fig.update_layout(
+    xaxis=dict(range=[-10, 10], title="X"),
+    yaxis=dict(range=[-10, 10], title="Y"),
+    width=500,
+    height=500,
+    template="simple_white"
+)
+placeholder.plotly_chart(fig)
